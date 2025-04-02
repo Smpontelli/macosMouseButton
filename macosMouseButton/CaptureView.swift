@@ -1,5 +1,5 @@
 //
-//  KeyboardMonitor.swift
+//  CaptureView.swift
 //  macosMouseButton
 //
 //  Created by Stéfano Modena Pontelli on 01/04/25.
@@ -8,40 +8,53 @@
 import SwiftUI
 import AppKit
 
-struct KeyboardMonitor: NSViewControllerRepresentable {
-    var keyPressed: (String) -> Void
+struct CaptureView: View {
+    @State private var lastKey = "Nenhuma tecla pressionada"
+    @State private var lastEscPressTime: TimeInterval = 0
+    
+    var body: some View {
+        VStack {
+            Text("Tecla Pressionada:")
+                .font(.title)
+            Text(lastKey)
+                .font(.largeTitle)
+                .padding()
+        }
+        .frame(width: 400, height: 300)
+        .onAppear {
+            startKeyMonitoring()
+        }
+    }
 
-    func makeNSViewController(context: Context) -> NSViewController {
-        let viewController = NSViewController()
-
-        // Captura teclas normais
+    func startKeyMonitoring() {
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             let key = getKeyFromKeyCode(event.keyCode)
             let modifiers = getModifiers(event.modifierFlags)
             let fullKey = modifiers.isEmpty ? key : "\(modifiers) + \(key)"
-            
-            print("Tecla pressionada no app: \(fullKey)")
-            keyPressed(fullKey)
+            lastKey = fullKey
 
-            return nil // Evita o som do macOS
+            // Verifica se ESC foi pressionado duas vezes em menos de 1 segundo
+            if key == "Escape" {
+                let now = Date().timeIntervalSince1970
+                if now - lastEscPressTime < 1.0 {
+                    NSApplication.shared.keyWindow?.close() // Fecha a janela
+                }
+                lastEscPressTime = now
+            }
+
+            return nil
         }
-
-        // Captura teclas modificadoras quando pressionadas sozinhas
+        
         NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { event in
             let modifiers = getModifiers(event.modifierFlags)
             if !modifiers.isEmpty {
                 print("Modificador pressionado: \(modifiers)")
-                keyPressed(modifiers)
+                lastKey = modifiers
             }
             return nil
         }
-
-        return viewController
     }
-
-    func updateNSViewController(_ nsViewController: NSViewController, context: Context) {}
-
-    /// Função para obter os modificadores pressionados
+    
     private func getModifiers(_ flags: NSEvent.ModifierFlags) -> String {
         var modifiers: [String] = []
 
@@ -64,8 +77,7 @@ struct KeyboardMonitor: NSViewControllerRepresentable {
         return modifiers.joined(separator: " + ")
     }
 
-    /// Função para mapear os códigos das teclas
-    private func getKeyFromKeyCode(_ keyCode: UInt16) -> String {
+    func getKeyFromKeyCode(_ keyCode: UInt16) -> String {
         let keyMap: [UInt16: String] = [
             0x00: "A", 0x0B: "B", 0x08: "C", 0x02: "D", 0x0E: "E",
             0x03: "F", 0x05: "G", 0x04: "H", 0x22: "I", 0x26: "J",
@@ -79,8 +91,7 @@ struct KeyboardMonitor: NSViewControllerRepresentable {
             0x21: "[", 0x1E: "]", 0x2A: "\\", 0x27: ";", 0x29: "'",
             0x32: "`", 0x2B: ",", 0x2F: ".", 0x2C: "/"
         ]
-
+        
         return keyMap[keyCode] ?? "Unknown"
     }
 }
-
