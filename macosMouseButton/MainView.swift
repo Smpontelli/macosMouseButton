@@ -8,33 +8,56 @@
 import SwiftUI
 
 struct MainView: View {
-    @State private var windowController: NSWindowController?
-
+    @State private var scrollUpKey: String? = nil
+    @State private var scrollDownKey: String? = nil
+    @State private var isCapturingScrollUp = false
+    @State private var isCapturingScrollDown = false
+    
     var body: some View {
         VStack {
-            Text("Pressione o botão para capturar teclas")
-                .padding()
+            HStack {
+                Text("Scroll Up")
+                Button("Mapear") {
+                    isCapturingScrollUp = true
+                }
+                Text(scrollUpKey ?? "Nenhuma tecla mapeada")
+                    .frame(width: 150, alignment: .leading)
+            }
+            .padding()
             
-            Button("Abrir Captura") {
-                openCaptureWindow()
+            HStack {
+                Text("Scroll Down")
+                Button("Mapear") {
+                    isCapturingScrollDown = true
+                }
+                Text(scrollDownKey ?? "Nenhuma tecla mapeada")
+                    .frame(width: 150, alignment: .leading)
             }
             .padding()
         }
-        .frame(width: 300, height: 200)
+        .sheet(isPresented: $isCapturingScrollUp) {
+            CaptureView { key in
+                scrollUpKey = key
+                isCapturingScrollUp = false
+            }
+            .onDisappear {
+                isCapturingScrollUp = false
+            }
+        }
+        .sheet(isPresented: $isCapturingScrollDown) {
+            CaptureView { key in
+                scrollDownKey = key
+                isCapturingScrollDown = false
+            }
+            .onDisappear {
+                isCapturingScrollDown = false
+            }
+        }
     }
+}
 
-    func openCaptureWindow() {
-        let captureView = CaptureView()
-        let hostingController = NSHostingController(rootView: captureView)
-
-        let window = NSWindow(
-            contentViewController: hostingController
-        )
-        window.setContentSize(NSSize(width: 400, height: 300))
-        window.styleMask = [.titled, .closable, .resizable]
-        window.title = "Captura de Teclas"
-        window.makeKeyAndOrderFront(nil)
-
-        windowController = NSWindowController(window: window)
+struct MainView_Previews: PreviewProvider {
+    static var previews: some View {
+        MainView()
     }
 }

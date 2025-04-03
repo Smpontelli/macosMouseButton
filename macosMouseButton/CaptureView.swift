@@ -9,6 +9,7 @@ import SwiftUI
 import AppKit
 
 struct CaptureView: View {
+    var onSave: (String) -> Void
     @State private var lastKey = "Nenhuma tecla pressionada"
     @State private var lastEscPressTime: TimeInterval = 0
     
@@ -19,6 +20,23 @@ struct CaptureView: View {
             Text(lastKey)
                 .font(.largeTitle)
                 .padding()
+            Text("Pressione ESC duas vezes para fechar")
+                .font(.caption)
+                .padding()
+                .foregroundColor(.red)
+            
+            HStack {
+                            Button("Cancelar") {
+                                NSApplication.shared.keyWindow?.close() // Fecha a janela sem salvar
+                            }
+                            .keyboardShortcut(.cancelAction)
+
+                            Button("Salvar") {
+                                onSave(lastKey) // Envia a tecla escolhida para a janela principal
+                            }
+                            .keyboardShortcut(.defaultAction)
+                        }
+                        .padding()
         }
         .frame(width: 400, height: 300)
         .onAppear {
