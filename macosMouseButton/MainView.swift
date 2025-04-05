@@ -72,6 +72,12 @@ struct MainView: View {
                 captureTarget = nil
             })
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
+            stopMonitoring()
+            scrollUpKey = nil
+            scrollDownKey = nil
+
+        }
     }
 
     private func startMonitoring() {
