@@ -10,9 +10,10 @@ import AppKit
 
 struct CaptureView: View {
     var onSave: (String) -> Void
+    var onCancel: () -> Void
     @State private var lastKey = "Nenhuma tecla pressionada"
     @State private var lastEscPressTime: TimeInterval = 0
-    
+
     var body: some View {
         VStack {
             Text("Tecla Pressionada:")
@@ -24,19 +25,21 @@ struct CaptureView: View {
                 .font(.caption)
                 .padding()
                 .foregroundColor(.red)
-            
-            HStack {
-                            Button("Cancelar") {
-                                NSApplication.shared.keyWindow?.close() // Fecha a janela sem salvar
-                            }
-                            .keyboardShortcut(.cancelAction)
 
-                            Button("Salvar") {
-                                onSave(lastKey) // Envia a tecla escolhida para a janela principal
-                            }
-                            .keyboardShortcut(.defaultAction)
-                        }
-                        .padding()
+            HStack {
+                Button("Cancelar") {
+                    onCancel()
+                    NSApplication.shared.keyWindow?.close()
+                }
+                .keyboardShortcut(.cancelAction)
+
+                Button("Salvar") {
+                    onSave(lastKey)
+                    NSApplication.shared.keyWindow?.close()
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+            .padding()
         }
         .frame(width: 400, height: 300)
         .onAppear {
@@ -51,28 +54,27 @@ struct CaptureView: View {
             let fullKey = modifiers.isEmpty ? key : "\(modifiers) + \(key)"
             lastKey = fullKey
 
-            // Verifica se ESC foi pressionado duas vezes em menos de 1 segundo
             if key == "Escape" {
                 let now = Date().timeIntervalSince1970
                 if now - lastEscPressTime < 1.0 {
-                    NSApplication.shared.keyWindow?.close() // Fecha a janela
+                    onCancel()
+                    NSApplication.shared.keyWindow?.close()
                 }
                 lastEscPressTime = now
             }
 
             return nil
         }
-        
+
         NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { event in
             let modifiers = getModifiers(event.modifierFlags)
             if !modifiers.isEmpty {
-                print("Modificador pressionado: \(modifiers)")
                 lastKey = modifiers
             }
             return nil
         }
     }
-    
+
     private func getModifiers(_ flags: NSEvent.ModifierFlags) -> String {
         var modifiers: [String] = []
 
@@ -109,7 +111,7 @@ struct CaptureView: View {
             0x21: "[", 0x1E: "]", 0x2A: "\\", 0x27: ";", 0x29: "'",
             0x32: "`", 0x2B: ",", 0x2F: ".", 0x2C: "/"
         ]
-        
+
         return keyMap[keyCode] ?? "Unknown"
     }
 }

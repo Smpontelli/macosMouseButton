@@ -10,47 +10,53 @@ import SwiftUI
 struct MainView: View {
     @State private var scrollUpKey: String? = nil
     @State private var scrollDownKey: String? = nil
-    @State private var isCapturingScrollUp = false
-    @State private var isCapturingScrollDown = false
-    
+    @State private var captureTarget: CaptureTarget? = nil
+
+    enum CaptureTarget: Identifiable {
+        case scrollUp
+        case scrollDown
+
+        var id: String {
+            switch self {
+            case .scrollUp: return "scrollUp"
+            case .scrollDown: return "scrollDown"
+            }
+        }
+    }
+
     var body: some View {
         VStack {
             HStack {
                 Text("Scroll Up")
                 Button("Mapear") {
-                    isCapturingScrollUp = true
+                    captureTarget = .scrollUp
                 }
                 Text(scrollUpKey ?? "Nenhuma tecla mapeada")
                     .frame(width: 150, alignment: .leading)
             }
             .padding()
-            
+
             HStack {
                 Text("Scroll Down")
                 Button("Mapear") {
-                    isCapturingScrollDown = true
+                    captureTarget = .scrollDown
                 }
                 Text(scrollDownKey ?? "Nenhuma tecla mapeada")
                     .frame(width: 150, alignment: .leading)
             }
             .padding()
         }
-        .sheet(isPresented: $isCapturingScrollUp) {
+        .sheet(item: $captureTarget) { target in
             CaptureView { key in
-                scrollUpKey = key
-                isCapturingScrollUp = false
-            }
-            .onDisappear {
-                isCapturingScrollUp = false
-            }
-        }
-        .sheet(isPresented: $isCapturingScrollDown) {
-            CaptureView { key in
-                scrollDownKey = key
-                isCapturingScrollDown = false
-            }
-            .onDisappear {
-                isCapturingScrollDown = false
+                switch target {
+                case .scrollUp:
+                    scrollUpKey = key
+                case .scrollDown:
+                    scrollDownKey = key
+                }
+                captureTarget = nil
+            } onCancel: {
+                captureTarget = nil
             }
         }
     }
