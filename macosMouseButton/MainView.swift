@@ -14,6 +14,8 @@ struct MainView: View {
     @State private var captureTarget: CaptureTarget? = nil
     @State private var isMappingEnabled: Bool = false
     @State private var eventMonitor: Any? = nil
+    @State private var runningApps: [String] = []
+    @State private var selectedApp: String? = nil
 
     enum CaptureTarget: Identifiable {
         case scrollUp
@@ -29,6 +31,13 @@ struct MainView: View {
 
     var body: some View {
         VStack {
+            Picker("App Selecionado", selection: $selectedApp) {
+                ForEach(runningApps, id: \.self) { app in
+                    Text(app).tag(app as String?)
+                }
+            }
+            .padding()
+
             Toggle("Ativar mapeamento de scroll", isOn: $isMappingEnabled)
                 .padding()
                 .onChange(of: isMappingEnabled) { enabled in
@@ -59,6 +68,11 @@ struct MainView: View {
             }
             .padding()
         }
+        .onAppear {
+            runningApps = NSWorkspace.shared.runningApplications
+                .compactMap { $0.localizedName }
+                .sorted()
+        }
         .sheet(item: $captureTarget) { target in
             CaptureView(onSave: { key in
                 switch target {
@@ -72,17 +86,15 @@ struct MainView: View {
                 captureTarget = nil
             })
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
-            stopMonitoring()
-            scrollUpKey = nil
-            scrollDownKey = nil
-
-        }
     }
 
     private func startMonitoring() {
         stopMonitoring()
         eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: .scrollWheel) { event in
+            guard let selectedApp = selectedApp,
+                  let frontmostApp = NSWorkspace.shared.frontmostApplication,
+                  frontmostApp.localizedName == selectedApp else { return }
+
             handleScrollEvent(event)
         }
     }
@@ -174,3 +186,4 @@ struct MainView_Previews: PreviewProvider {
         MainView()
     }
 }
+
