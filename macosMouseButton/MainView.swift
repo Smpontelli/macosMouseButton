@@ -32,7 +32,9 @@ struct MainView: View {
     var body: some View {
         VStack {
             Picker("App Selecionado", selection: $selectedApp) {
-                ForEach(runningApps, id: \.self) { app in
+                Text("Selecione um app").tag(nil as String?)
+
+                ForEach(runningApps.uniqued(), id: \.self) { app in
                     Text(app).tag(app as String?)
                 }
             }
@@ -40,13 +42,14 @@ struct MainView: View {
 
             Toggle("Ativar mapeamento de scroll", isOn: $isMappingEnabled)
                 .padding()
-                .onChange(of: isMappingEnabled) { enabled in
-                    if enabled {
+                .onChange(of: isMappingEnabled) {
+                    if isMappingEnabled {
                         startMonitoring()
                     } else {
                         stopMonitoring()
                     }
                 }
+
 
             HStack {
                 Text("Scroll Up")
@@ -184,6 +187,13 @@ struct MainView: View {
 struct MainView_Previews: PreviewProvider {
     static var previews: some View {
         MainView()
+    }
+}
+
+extension Array where Element: Hashable {
+    func uniqued() -> [Element] {
+        var seen = Set<Element>()
+        return filter { seen.insert($0).inserted }
     }
 }
 
